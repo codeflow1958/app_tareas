@@ -1,4 +1,4 @@
-package com.tuuniversidad.gestiontareas.modelo;
+package com.umg.gestiontareas.modelo;
 
 import jakarta.persistence.*; // Si estás usando Spring Data JPA
 import java.time.LocalDateTime; // Para la fecha y hora de creación
@@ -74,6 +74,10 @@ public class Tarea {
     }
 
     // Setters para los atributos que necesites modificar
+    public void setId(Long id) { // Agregado el método setId
+        this.id = id;
+    }
+
     public void setTitulo(String titulo) {
         this.titulo = titulo;
     }
