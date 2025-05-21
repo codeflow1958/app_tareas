@@ -1,41 +1,34 @@
-package com.umg.gestiontareas.modelo;
+package com.tuuniversidad.gestiontareas.modelo;
 
-import jakarta.persistence.*;
-import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import jakarta.persistence.*; // Si estás usando Spring Data JPA
+import java.time.LocalDateTime; // Para la fecha y hora de creación
 
-@Entity
-@Table(name = "tareas")
+@Entity // Indica que esta clase es una entidad JPA (para la base de datos)
+@Table(name = "tareas") // Especifica el nombre de la tabla en la base de datos
 public class Tarea {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id // Indica que este atributo es la clave primaria
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // Genera el ID automáticamente
     private Long id;
 
     private String titulo;
 
     private String descripcion;
 
-    private String estado; // Ej: PENDIENTE, COMPLETADA...
+    private String estado; // Por ejemplo: "PENDIENTE", "EN_PROGRESO", "COMPLETADA"
 
-    private String prioridad;
+    private String prioridad; // Por ejemplo: "ALTA", "MEDIA", "BAJA"
 
-    private String tipo;
+    private String tipo; // Por ejemplo: "PERSONAL", "TRABAJO", "ESTUDIO"
 
     private LocalDateTime fechaCreacion;
 
     private LocalDateTime fechaCompletada;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tarea_padre_id")
-    private Tarea tareaPadre;
-
-    @OneToMany(mappedBy = "tareaPadre", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Tarea> subtareas = new HashSet<>();
+    // Necesitamos constructores, getters y setters. Los generaremos a continuación.
 
     public Tarea() {
-        this.fechaCreacion = LocalDateTime.now();
+        this.fechaCreacion = LocalDateTime.now(); // Establecer la fecha de creación al crear una nueva tarea
     }
 
     public Tarea(String titulo, String descripcion, String estado, String prioridad, String tipo) {
@@ -47,54 +40,29 @@ public class Tarea {
         this.fechaCreacion = LocalDateTime.now();
     }
 
-    // Getters y setters
-
+    // Getters para todos los atributos
     public Long getId() {
         return id;
-    }
-
-    public void setId(Long id) {  // Lo dejas para que JPA pueda setearlo
-        this.id = id;
     }
 
     public String getTitulo() {
         return titulo;
     }
 
-    public void setTitulo(String titulo) {
-        this.titulo = titulo;
-    }
-
     public String getDescripcion() {
         return descripcion;
-    }
-
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
     }
 
     public String getEstado() {
         return estado;
     }
 
-    public void setEstado(String estado) {
-        this.estado = estado;
-    }
-
     public String getPrioridad() {
         return prioridad;
     }
 
-    public void setPrioridad(String prioridad) {
-        this.prioridad = prioridad;
-    }
-
     public String getTipo() {
         return tipo;
-    }
-
-    public void setTipo(String tipo) {
-        this.tipo = tipo;
     }
 
     public LocalDateTime getFechaCreacion() {
@@ -105,35 +73,28 @@ public class Tarea {
         return fechaCompletada;
     }
 
+    // Setters para los atributos que necesites modificar
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+    public void setPrioridad(String prioridad) {
+        this.prioridad = prioridad;
+    }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
+    }
+
     public void setFechaCompletada(LocalDateTime fechaCompletada) {
         this.fechaCompletada = fechaCompletada;
-    }
-
-    public Tarea getTareaPadre() {
-        return tareaPadre;
-    }
-
-    public void setTareaPadre(Tarea tareaPadre) {
-        this.tareaPadre = tareaPadre;
-    }
-
-    public Set<Tarea> getSubtareas() {
-        return subtareas;
-    }
-
-    public void setSubtareas(Set<Tarea> subtareas) {
-        this.subtareas = subtareas;
-    }
-
-    // Métodos para agregar y quitar subtareas (opcional pero recomendado)
-
-    public void agregarSubtarea(Tarea subtarea) {
-        subtareas.add(subtarea);
-        subtarea.setTareaPadre(this);
-    }
-
-    public void eliminarSubtarea(Tarea subtarea) {
-        subtareas.remove(subtarea);
-        subtarea.setTareaPadre(null);
     }
 }
