@@ -79,7 +79,7 @@ public class TareaController {
         LOGGER.log(Level.INFO, "Solicitud para marcar tarea con ID: {0} como completada.", id);
         tareaService.marcarComoCompletada(id);
         LOGGER.log(Level.INFO, "Tarea marcada como completada. El servicio envió el mensaje a RabbitMQ.");
-        return ResponseEntity.ok().build(); // Cambiado a .build() ya que el cuerpo es void
+        return ResponseEntity.ok().build();
     }
 
     // Endpoint para deshacer la última acción
@@ -90,7 +90,7 @@ public class TareaController {
         return ResponseEntity.ok(mensaje);
     }
 
-    // Endpoint para crear una subtarea
+    // Nuevos endpoints para la jerarquía de tareas
     @PostMapping("/{idPadre}/subtarea")
     public ResponseEntity<Tarea> crearSubtarea(@PathVariable Long idPadre, @RequestBody Tarea tarea) {
         LOGGER.log(Level.INFO, "Solicitud para crear subtarea de la tarea con ID: {0}", idPadre);
@@ -98,11 +98,47 @@ public class TareaController {
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevaSubtarea);
     }
 
-    // Endpoint para obtener la jerarquía de tareas
     @GetMapping("/jerarquia")
     public ResponseEntity<List<Tarea>> obtenerJerarquiaTareas() {
         LOGGER.log(Level.INFO, "Solicitud para obtener la jerarquía de tareas.");
         List<Tarea> tareas = tareaService.obtenerJerarquiaTareas();
         return ResponseEntity.ok(tareas);
+    }
+
+    // Nuevos endpoints para la cola de tareas programadas
+    @PostMapping("/programar")
+    public ResponseEntity<String> programarTarea(@RequestBody Tarea tarea) {
+        LOGGER.log(Level.INFO, "Solicitud para programar tarea: {0}", tarea.getTitulo());
+        tareaService.programarTarea(tarea);
+        return ResponseEntity.ok("Tarea programada exitosamente.");
+    }
+
+    @PostMapping("/procesar-siguiente")
+    public ResponseEntity<Tarea> procesarSiguienteTareaProgramada() {
+        LOGGER.log(Level.INFO, "Solicitud para procesar la siguiente tarea programada.");
+        Tarea tareaProcesada = tareaService.procesarSiguienteTareaProgramada();
+        if (tareaProcesada != null) {
+            return ResponseEntity.ok(tareaProcesada);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // O un mensaje más específico
+        }
+    }
+
+    @GetMapping("/siguiente-programada")
+    public ResponseEntity<Tarea> verSiguienteTareaProgramada() {
+        LOGGER.log(Level.INFO, "Solicitud para ver la siguiente tarea programada.");
+        Tarea tarea = tareaService.verSiguienteTareaProgramada();
+        if (tarea != null) {
+            return ResponseEntity.ok(tarea);
+        } else {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null); // 204 No Content si está vacía
+        }
+    }
+
+    @GetMapping("/cola-vacia")
+    public ResponseEntity<Boolean> estaColaTareasProgramadasVacia() {
+        LOGGER.log(Level.INFO, "Solicitud para verificar si la cola de tareas programadas está vacía.");
+        boolean estaVacia = tareaService.estaColaTareasProgramadasVacia();
+        return ResponseEntity.ok(estaVacia);
     }
 }
