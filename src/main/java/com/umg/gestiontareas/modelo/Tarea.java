@@ -1,4 +1,4 @@
-package com.tuuniversidad.gestiontareas.modelo;
+package com.umg.gestiontareas.modelo;
 
 import jakarta.persistence.*; // Si estás usando Spring Data JPA
 import java.time.LocalDateTime; // Para la fecha y hora de creación
@@ -24,6 +24,14 @@ public class Tarea {
     private LocalDateTime fechaCreacion;
 
     private LocalDateTime fechaCompletada;
+
+    // ¡NUEVO ATRIBUTO PARA LA RELACIÓN PADRE-HIJO!
+    // Usamos @ManyToOne para indicar que muchas subtareas pueden tener un solo padre.
+    // @JoinColumn especifica la columna de la clave foránea en la tabla 'tareas'
+    // que apunta al ID de la tarea padre.
+    @ManyToOne(fetch = FetchType.LAZY) // Lazy loading para evitar cargar el padre si no se necesita
+    @JoinColumn(name = "tarea_padre_id") // Nombre de la columna en la BD que guarda el ID del padre
+    private Tarea tareaPadre; // Referencia a la tarea padre
 
     // Necesitamos constructores, getters y setters. Los generaremos a continuación.
 
@@ -73,7 +81,17 @@ public class Tarea {
         return fechaCompletada;
     }
 
+    // ¡NUEVO GETTER PARA TAREA PADRE!
+    public Tarea getTareaPadre() {
+        return tareaPadre;
+    }
+
     // Setters para los atributos que necesites modificar
+    // ¡AÑADE ESTE SETTER!
+    public void setId(Long id) { // Este ya lo debiste haber añadido en el paso anterior
+        this.id = id;
+    }
+
     public void setTitulo(String titulo) {
         this.titulo = titulo;
     }
@@ -97,4 +115,35 @@ public class Tarea {
     public void setFechaCompletada(LocalDateTime fechaCompletada) {
         this.fechaCompletada = fechaCompletada;
     }
+
+    // ¡NUEVO SETTER PARA TAREA PADRE!
+    public void setTareaPadre(Tarea tareaPadre) {
+        this.tareaPadre = tareaPadre;
+    }
+
+    // Opcional: Si quieres tener las subtareas referenciadas desde el padre
+    // Es una relación bidireccional, pero a menudo no es estrictamente necesaria
+    // para tu caso de uso actual de agregar al árbol.
+    /*
+    @OneToMany(mappedBy = "tareaPadre", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Tarea> subtareas = new ArrayList<>();
+
+    public List<Tarea> getSubtareas() {
+        return subtareas;
+    }
+
+    public void setSubtareas(List<Tarea> subtareas) {
+        this.subtareas = subtareas;
+    }
+
+    public void addSubtarea(Tarea subtarea) {
+        this.subtareas.add(subtarea);
+        subtarea.setTareaPadre(this);
+    }
+
+    public void removeSubtarea(Tarea subtarea) {
+        this.subtareas.remove(subtarea);
+        subtarea.setTareaPadre(null);
+    }
+    */
 }
