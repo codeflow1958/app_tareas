@@ -25,6 +25,8 @@ public class Tarea {
 
     private LocalDateTime fechaCompletada;
 
+    private Long idTareaPadre; // Para almacenar el ID de la tarea padre en la DB
+
     // ¡NUEVO ATRIBUTO PARA LA RELACIÓN PADRE-HIJO!
     // Usamos @ManyToOne para indicar que muchas subtareas pueden tener un solo padre.
     // @JoinColumn especifica la columna de la clave foránea en la tabla 'tareas'
@@ -84,6 +86,13 @@ public class Tarea {
     // ¡NUEVO GETTER PARA TAREA PADRE!
     public Tarea getTareaPadre() {
         return tareaPadre;
+    }
+    public Long getIdTareaPadre() {
+        return idTareaPadre;
+    }
+
+    public void setIdTareaPadre(Long idTareaPadre) {
+        this.idTareaPadre = idTareaPadre;
     }
 
     // Setters para los atributos que necesites modificar
