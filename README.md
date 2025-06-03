@@ -141,40 +141,56 @@ mvn clean install
 
 ---
 
-## ¡A Probar la API con Swagger!
+## Probar la API (Con Swagger UI)
 
-> Accede a: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+Una vez que tu aplicación Spring Boot esté corriendo (verás `Tomcat started on port 8080` en la consola), puedes comenzar a interactuar con las APIs.
 
-###  CRUD de Tareas
+**URL de Swagger UI:** [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 
-```http
-GET /api/tareas
-POST /api/tareas
-PUT /api/tareas/{id}
-DELETE /api/tareas/{id}
+### Endpoints Disponibles
+
+### Tareas Básicas (CRUD)
+
+```
+GET    /api/tareas                      -> Obtener todas las tareas
+POST   /api/tareas                      -> Crear una nueva tarea (requiere título, descripción, estado, prioridad, tipo)
+PUT    /api/tareas/{id}                 -> Actualizar una tarea existente
+DELETE /api/tareas/{id}                 -> Eliminar una tarea
 ```
 
-### Deshacer
+### Deshacer Cambios (Pila)
 
-```http
-POST /api/tareas/deshacer
+```
+POST /api/tareas/deshacer              -> Revertir la última acción realizada sobre una tarea
 ```
 
-### Jerarquía
+### Jerarquía de Tareas (Árbol)
 
-```http
-POST /api/tareas/{idPadre}/subtarea
-GET /api/tareas/jerarquia
+```
+POST /api/tareas/{idPadre}/subtarea    -> Crear una subtarea asociada a un padre
+GET  /api/tareas/jerarquia             -> Obtener la jerarquía completa de tareas (modo lista plana)
 ```
 
 ### Tareas Programadas (Cola)
 
-```http
-POST /api/tareas/programar
-GET /api/tareas/siguiente-programada
-POST /api/tareas/procesar-siguiente
-GET /api/tareas/cola-vacia
 ```
+POST /api/tareas/programar             -> Enviar una tarea a la cola de ejecución
+GET  /api/tareas/siguiente-programada  -> Ver la siguiente tarea programada
+POST /api/tareas/procesar-siguiente    -> Procesar (ejecutar) la siguiente tarea programada
+GET  /api/tareas/cola-vacia            -> Verificar si la cola está vacía
+```
+
+### Filtros y Clasificación
+
+```
+GET /api/tareas/estado?valor=PENDIENTE                -> Filtrar tareas por estado
+GET /api/tareas/prioridad?valor=ALTA                  -> Filtrar tareas por prioridad
+GET /api/tareas/tipo?valor=TRABAJO                    -> Filtrar tareas por tipo
+GET /api/tareas/estado-ordenado?valor=PENDIENTE       -> Filtrar por estado y ordenar por fecha de creación (ascendente)
+GET /api/tareas/prioridad-ordenada?valor=ALTA         -> Filtrar por prioridad y ordenar por fecha de creación (descendente)
+```
+
+Puedes probar cada endpoint desde Swagger UI o mediante herramientas como Postman o curl.
 
 ---
 
