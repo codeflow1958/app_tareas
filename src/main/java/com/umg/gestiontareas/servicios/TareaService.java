@@ -17,6 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors; // Para usar Collectors
 import java.util.ArrayList; // Asegúrate de importar ArrayList
+import java.util.Objects; // Importa para usar Objects.equals
 
 @Service
 public class TareaService {
@@ -133,36 +134,21 @@ public class TareaService {
         rabbitMQSender.sendTareaEvent(mensaje);
         return nuevaTarea;
     }
-    public List<Tarea> findByEstado(String estado) {
-        return tareaRepository.findByEstado(estado);
-    }
-
-    public List<Tarea> findByPrioridad(String prioridad) {
-        return tareaRepository.findByPrioridad(prioridad);
-    }
-
-    public List<Tarea> findByTipo(String tipo) {
-        return tareaRepository.findByTipo(tipo);
-    }
-
-    public List<Tarea> findByEstadoOrderByFechaCreacionAsc(String estado) {
-        return tareaRepository.findByEstadoOrderByFechaCreacionAsc(estado);
-    }
-
-    public List<Tarea> findByPrioridadOrderByFechaCreacionDesc(String prioridad) {
-        return tareaRepository.findByPrioridadOrderByFechaCreacionDesc(prioridad);
-    }
-
 
     public Tarea actualizarTarea(Long id, Tarea tareaActualizada) {
         LOGGER.log(Level.INFO, "Actualizando tarea con ID: {0}", id);
         Tarea tareaExistente = tareaRepository.findById(id).orElse(null);
         if (tareaExistente != null) {
-            pilaDeshacer.push(new AccionDeshacer("ACTUALIZAR", tareaExistente));
-            tareaActualizada.setId(id);
-            // Si el idTareaPadre cambia, el árbol deberá ser actualizado
-            // Para actualizaciones de jerarquía en tiempo real, necesitarías métodos en ArbolJerarquicoTareas para mover nodos.
-            // Por simplicidad, el árbol se reconstruye al reiniciar la aplicación si la jerarquía cambia.
+            pilaDeshacer.push(new AccionDeshacer("ACTUALIZAR", tareaExistente)); // Guarda el estado ANTERIOR para deshacer
+            tareaActualizada.setId(id); // Asegura que la ID sea la correcta para la actualización
+
+            // Lógica para actualizar la jerarquía en el árbol en memoria
+            // Comparamos el idTareaPadre existente con el idTareaPadre actualizado
+            if (!Objects.equals(tareaExistente.getIdTareaPadre(), tareaActualizada.getIdTareaPadre())) {
+                LOGGER.log(Level.INFO, "Cambio de padre detectado para tarea ID {0}. Moviendo nodo en el árbol.", id);
+                arbolTareas.moverNodo(tareaActualizada.getId(), tareaActualizada.getIdTareaPadre());
+            }
+
             Tarea tareaGuardada = tareaRepository.save(tareaActualizada);
             String mensaje = "Tarea actualizada: ID " + tareaGuardada.getId() + ", Título: " + tareaGuardada.getTitulo();
             rabbitMQSender.sendTareaEvent(mensaje);
@@ -232,6 +218,9 @@ public class TareaService {
                     if (tareaAnterior != null) {
                         tareaRepository.save(tareaAnterior); // Restaurar estado anterior en DB
                         // Si la jerarquía cambió con la actualización, aquí también se debería revertir el árbol
+                        Long idTareaActualizada = tareaAnterior.getId(); // ID de la tarea que se actualizó
+                        Long idPadreOriginal = tareaAnterior.getIdTareaPadre(); // Padre que tenía ANTES de la actualización
+                        arbolTareas.moverNodo(idTareaActualizada, idPadreOriginal); // Mover el nodo a su posición original
                         String mensaje = "Deshecha actualización: ID " + tareaAnterior.getId();
                         rabbitMQSender.sendTareaEvent(mensaje);
                         return mensaje;
@@ -329,5 +318,31 @@ public class TareaService {
     public boolean estaColaTareasProgramadasVacia() {
         LOGGER.log(Level.INFO, "Verificando si la cola de tareas programadas está vacía.");
         return colaTareasProgramadas.isEmpty();
+    }
+
+    // Métodos de clasificación y filtrado
+    public List<Tarea> findByEstado(String estado) {
+        LOGGER.log(Level.INFO, "Buscando tareas por estado: {0}", estado);
+        return tareaRepository.findByEstado(estado);
+    }
+
+    public List<Tarea> findByPrioridad(String prioridad) {
+        LOGGER.log(Level.INFO, "Buscando tareas por prioridad: {0}", prioridad);
+        return tareaRepository.findByPrioridad(prioridad);
+    }
+
+    public List<Tarea> findByTipo(String tipo) {
+        LOGGER.log(Level.INFO, "Buscando tareas por tipo: {0}", tipo);
+        return tareaRepository.findByTipo(tipo);
+    }
+
+    public List<Tarea> findByEstadoOrderByFechaCreacionAsc(String estado) {
+        LOGGER.log(Level.INFO, "Buscando tareas por estado y ordenando por fecha de creación ascendente: {0}", estado);
+        return tareaRepository.findByEstadoOrderByFechaCreacionAsc(estado);
+    }
+
+    public List<Tarea> findByPrioridadOrderByFechaCreacionDesc(String prioridad) {
+        LOGGER.log(Level.INFO, "Buscando tareas por prioridad y ordenando por fecha de creación descendente: {0}", prioridad);
+        return tareaRepository.findByPrioridadOrderByFechaCreacionDesc(prioridad);
     }
 }
