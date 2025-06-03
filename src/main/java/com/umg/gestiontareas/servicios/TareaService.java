@@ -9,12 +9,14 @@ import com.umg.gestiontareas.repositorio.TareaRepositoryMySQL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.PostConstruct; // Importa para el método PostConstruct
+import jakarta.annotation.PostConstruct;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.ArrayList;
 
 @Service
 public class TareaService {
@@ -70,28 +72,43 @@ public class TareaService {
         // Limpiamos el árbol actual para reconstruirlo
         arbolTareas = new ArbolJerarquicoTareas<>();
 
-        // Primero agregamos todas las tareas que no tienen padre (o null), para que sean raíces o hijos de la raíz principal
-        for (Tarea tarea : todasLasTareas) {
-            if (tarea.getIdTareaPadre() == null) {
-                arbolTareas.agregarTarea(tarea, null); // Agrega como raíz o hijo de la raíz principal
-            }
+        // Separamos tareas sin padre y con padre para un procesamiento ordenado
+        List<Tarea> tareasSinPadre = todasLasTareas.stream()
+                .filter(tarea -> tarea.getIdTareaPadre() == null)
+                .collect(Collectors.toList());
+
+        List<Tarea> tareasConPadre = todasLasTareas.stream()
+                .filter(tarea -> tarea.getIdTareaPadre() != null)
+                .collect(Collectors.toList());
+
+        // Primero agregamos todas las tareas que no tienen padre
+        for (Tarea tarea : tareasSinPadre) {
+            arbolTareas.agregarTarea(tarea, null);
         }
-        // Luego, agregamos las tareas que sí tienen padre, asegurándonos de que sus padres ya estén en el árbol
-        // Puede que necesitemos varias pasadas si la jerarquía es profunda y no agregamos en orden topológico
+
+        // Luego, en pasadas, agregamos las tareas que tienen padre
+        // Esto asegura que los padres existan en el árbol antes de intentar agregar los hijos
         boolean algoAgregadoEnPasada;
         do {
             algoAgregadoEnPasada = false;
-            for (Tarea tarea : todasLasTareas) {
-                if (tarea.getIdTareaPadre() != null && arbolTareas.buscarNodoPorId(tarea.getId()) == null) { // Si tiene padre y no está ya en el árbol
-                    // Intentamos agregarla como subtarea. Si el padre ya existe en el árbol, se agregará.
-                    NodoArbolTarea<Tarea> padreEnArbol = arbolTareas.buscarNodoPorId(tarea.getIdTareaPadre());
-                    if (padreEnArbol != null) {
-                        arbolTareas.agregarTarea(tarea, tarea.getIdTareaPadre());
-                        algoAgregadoEnPasada = true;
-                    }
+            List<Tarea> tareasAgregadasEnEstaPasada = new ArrayList<>();
+            for (Tarea tarea : tareasConPadre) {
+                // Solo intentamos agregar si la tarea aún no está en el árbol
+                // y si su padre ya está en el árbol
+                if (arbolTareas.buscarNodoPorId(tarea.getId()) == null && arbolTareas.buscarNodoPorId(tarea.getIdTareaPadre()) != null) {
+                    arbolTareas.agregarTarea(tarea, tarea.getIdTareaPadre());
+                    tareasAgregadasEnEstaPasada.add(tarea);
+                    algoAgregadoEnPasada = true;
                 }
             }
-        } while (algoAgregadoEnPasada); // Repetimos hasta que no se agregue nada en una pasada completa (o todos se agreguen)
+            // Removemos las tareas que ya agregamos para la próxima pasada
+            tareasConPadre.removeAll(tareasAgregadasEnEstaPasada);
+
+        } while (algoAgregadoEnPasada && !tareasConPadre.isEmpty()); // Repetimos hasta que no se agregue nada o no queden tareas con padre
+
+        if (!tareasConPadre.isEmpty()) {
+            LOGGER.log(Level.WARNING, "No se pudieron agregar {0} tareas con padre al árbol. Posiblemente sus padres no existen en la DB o hay un ciclo.", tareasConPadre.size());
+        }
         LOGGER.log(Level.INFO, "Árbol de tareas reconstruido con {0} elementos desde la base de datos.", arbolTareas.obtenerTareasDelArbol().size());
     }
 
@@ -123,10 +140,10 @@ public class TareaService {
         if (tareaExistente != null) {
             pilaDeshacer.push(new AccionDeshacer("ACTUALIZAR", tareaExistente));
             tareaActualizada.setId(id);
-            // Si el idTareaPadre cambia, el árbol deberá ser actualizado (PENDIENTE)
-            Tarea tareaGuardada = tareaRepository.save(tareaActualizada);
-            // Por simplicidad, si la tarea padre se actualiza, el árbol se reconstruye al reiniciar la aplicación
+            // Si el idTareaPadre cambia, el árbol deberá ser actualizado
             // Para actualizaciones de jerarquía en tiempo real, necesitarías métodos en ArbolJerarquicoTareas para mover nodos.
+            // Por simplicidad, el árbol se reconstruye al reiniciar la aplicación si la jerarquía cambia.
+            Tarea tareaGuardada = tareaRepository.save(tareaActualizada);
             String mensaje = "Tarea actualizada: ID " + tareaGuardada.getId() + ", Título: " + tareaGuardada.getTitulo();
             rabbitMQSender.sendTareaEvent(mensaje);
             return tareaGuardada;
@@ -148,26 +165,6 @@ public class TareaService {
             rabbitMQSender.sendTareaEvent(mensaje);
         }
     }
-
-    // Método auxiliar para obtener el padre de un nodo en el árbol (recursivo)
-    // Este método ya no es estrictamente necesario si guardamos idTareaPadre en la Tarea
-    /*
-    private NodoArbolTarea<Tarea> obtenerPadreDelArbol(NodoArbolTarea<Tarea> nodoActual, NodoArbolTarea<Tarea> nodoBuscado) {
-        if (nodoActual == null || nodoBuscado == null || nodoActual == nodoBuscado) {
-            return null;
-        }
-        for (NodoArbolTarea<Tarea> hijo : nodoActual.getHijos()) {
-            if (hijo == nodoBuscado) {
-                return nodoActual;
-            }
-            NodoArbolTarea<Tarea> padreEncontrado = obtenerPadreDelArbol(hijo, nodoBuscado);
-            if (padreEncontrado != null) {
-                return padreEncontrado;
-            }
-        }
-        return null;
-    }
-    */
 
     public void marcarComoCompletada(Long id) {
         LOGGER.log(Level.INFO, "Marcando tarea con ID: {0} como completada", id);
@@ -313,4 +310,4 @@ public class TareaService {
         LOGGER.log(Level.INFO, "Verificando si la cola de tareas programadas está vacía.");
         return colaTareasProgramadas.isEmpty();
     }
-}
+} este es mi codigo de tarea serv
