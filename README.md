@@ -198,6 +198,6 @@ Puedes probar cada endpoint desde Swagger UI o mediante herramientas como Postma
 
 - **Consola de IntelliJ:** muestra las estructuras en acción.
 - **RabbitMQ UI:** [http://localhost:15672](http://localhost:15672)
-  - Usuario: `guest` — Contraseña: `guest` (por defecto).
+  - Usuario: `guest` — Contraseña: `guest`
 - **MongoDB Compass**: conecta a `mongodb://localhost:27017` y selecciona la base `gestion_tareas_logs`.
 
