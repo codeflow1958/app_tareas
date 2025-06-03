@@ -41,9 +41,6 @@ El proyecto está organizado en una arquitectura de **módulos Maven separados**
 2.  **`estructuras-datos`**:
     * Módulo JAR independiente que contiene la implementación de las estructuras de datos personalizadas (Pila, Árbol, Cola, Lista).
     * Es una dependencia para `gestion-tareas-app`.
-3.  **`gestion-tareas-persistencia`**:
-    * (Si lo hubiéramos usado para la persistencia de tareas, aquí iría `Tarea.java` y `TareaRepositoryMySQL.java`).
-    * **Estado Actual:** En este proyecto, para simplificar el despliegue, las entidades y repositorios de MySQL y MongoDB se mantuvieron directamente en `gestion-tareas-app`. Este repositorio existe pero no está activo en esta versión.
 
 ---
 
