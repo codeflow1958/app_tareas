@@ -20,8 +20,6 @@ public class TareaController {
     @Autowired
     private TareaService tareaService; // Inyecta el servicio de tareas
 
-    // Ya no inyectamos RabbitMQSender aquí
-
     // Endpoint para obtener todas las tareas
     @GetMapping
     public ResponseEntity<List<Tarea>> obtenerTodasLasTareas() {
@@ -38,6 +36,7 @@ public class TareaController {
         if (tarea != null) {
             return ResponseEntity.ok(tarea);
         } else {
+            LOGGER.log(Level.WARNING, "Tarea con ID {0} no encontrada.", id);
             return ResponseEntity.notFound().build();
         }
     }
@@ -60,6 +59,7 @@ public class TareaController {
             LOGGER.log(Level.INFO, "Tarea actualizada. El servicio envió el mensaje a RabbitMQ.");
             return ResponseEntity.ok(tareaGuardada);
         } else {
+            LOGGER.log(Level.WARNING, "Tarea con ID {0} no encontrada para actualizar.", id);
             return ResponseEntity.notFound().build();
         }
     }
@@ -120,7 +120,8 @@ public class TareaController {
         if (tareaProcesada != null) {
             return ResponseEntity.ok(tareaProcesada);
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // O un mensaje más específico
+            LOGGER.log(Level.INFO, "No hay tareas en la cola para procesar.");
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build(); // 204 No Content si está vacía
         }
     }
 
@@ -131,7 +132,8 @@ public class TareaController {
         if (tarea != null) {
             return ResponseEntity.ok(tarea);
         } else {
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null); // 204 No Content si está vacía
+            LOGGER.log(Level.INFO, "No hay tareas en la cola para ver.");
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build(); // 204 No Content si está vacía
         }
     }
 
@@ -140,5 +142,72 @@ public class TareaController {
         LOGGER.log(Level.INFO, "Solicitud para verificar si la cola de tareas programadas está vacía.");
         boolean estaVacia = tareaService.estaColaTareasProgramadasVacia();
         return ResponseEntity.ok(estaVacia);
+    }
+
+    // Nuevos endpoints para la clasificación de tareas
+
+    /**
+     * Obtiene tareas filtradas por estado.
+     * Ejemplo: GET /api/tareas/estado?valor=PENDIENTE
+     * @param valor El estado por el cual filtrar.
+     * @return Lista de tareas que coinciden con el estado.
+     */
+    @GetMapping("/estado")
+    public ResponseEntity<List<Tarea>> obtenerTareasPorEstado(@RequestParam String valor) {
+        LOGGER.log(Level.INFO, "Solicitud para obtener tareas por estado: {0}", valor);
+        List<Tarea> tareas = tareaService.findByEstado(valor);
+        return ResponseEntity.ok(tareas);
+    }
+
+    /**
+     * Obtiene tareas filtradas por prioridad.
+     * Ejemplo: GET /api/tareas/prioridad?valor=ALTA
+     * @param valor La prioridad por la cual filtrar.
+     * @return Lista de tareas que coinciden con la prioridad.
+     */
+    @GetMapping("/prioridad")
+    public ResponseEntity<List<Tarea>> obtenerTareasPorPrioridad(@RequestParam String valor) {
+        LOGGER.log(Level.INFO, "Solicitud para obtener tareas por prioridad: {0}", valor);
+        List<Tarea> tareas = tareaService.findByPrioridad(valor);
+        return ResponseEntity.ok(tareas);
+    }
+
+    /**
+     * Obtiene tareas filtradas por tipo.
+     * Ejemplo: GET /api/tareas/tipo?valor=TRABAJO
+     * @param valor El tipo por el cual filtrar.
+     * @return Lista de tareas que coinciden con el tipo.
+     */
+    @GetMapping("/tipo")
+    public ResponseEntity<List<Tarea>> obtenerTareasPorTipo(@RequestParam String valor) {
+        LOGGER.log(Level.INFO, "Solicitud para obtener tareas por tipo: {0}", valor);
+        List<Tarea> tareas = tareaService.findByTipo(valor);
+        return ResponseEntity.ok(tareas);
+    }
+
+    /**
+     * Obtiene tareas filtradas por estado y ordenadas por fecha de creación ascendente.
+     * Ejemplo: GET /api/tareas/estado-ordenado?valor=PENDIENTE
+     * @param valor El estado por el cual filtrar.
+     * @return Lista de tareas que coinciden con el estado, ordenadas.
+     */
+    @GetMapping("/estado-ordenado")
+    public ResponseEntity<List<Tarea>> obtenerTareasPorEstadoOrdenado(@RequestParam String valor) {
+        LOGGER.log(Level.INFO, "Solicitud para obtener tareas por estado ordenado: {0}", valor);
+        List<Tarea> tareas = tareaService.findByEstadoOrderByFechaCreacionAsc(valor);
+        return ResponseEntity.ok(tareas);
+    }
+
+    /**
+     * Obtiene tareas filtradas por prioridad y ordenadas por fecha de creación descendente.
+     * Ejemplo: GET /api/tareas/prioridad-ordenada?valor=ALTA
+     * @param valor La prioridad por la cual filtrar.
+     * @return Lista de tareas que coinciden con la prioridad, ordenadas.
+     */
+    @GetMapping("/prioridad-ordenada")
+    public ResponseEntity<List<Tarea>> obtenerTareasPorPrioridadOrdenada(@RequestParam String valor) {
+        LOGGER.log(Level.INFO, "Solicitud para obtener tareas por prioridad ordenada: {0}", valor);
+        List<Tarea> tareas = tareaService.findByPrioridadOrderByFechaCreacionDesc(valor);
+        return ResponseEntity.ok(tareas);
     }
 }
