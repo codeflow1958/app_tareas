@@ -3,20 +3,20 @@ package com.umg.gestiontareas.servicios;
 import com.umg.estructuras.pila.PilaAcciones;
 import com.umg.estructuras.arbol.ArbolJerarquicoTareas;
 import com.umg.estructuras.cola.ColaTareasProgramadas;
-import com.umg.estructuras.arbol.NodoArbolTarea;
+import com.umg.estructuras.arbol.NodoArbolTarea; // Importa NodoArbolTarea
 import com.umg.gestiontareas.modelo.Tarea;
 import com.umg.gestiontareas.repositorio.TareaRepositoryMySQL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct; // Importa para el método PostConstruct
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.ArrayList;
+import java.util.stream.Collectors; // Para usar Collectors
+import java.util.ArrayList; // Asegúrate de importar ArrayList
 
 @Service
 public class TareaService {
@@ -91,7 +91,7 @@ public class TareaService {
         boolean algoAgregadoEnPasada;
         do {
             algoAgregadoEnPasada = false;
-            List<Tarea> tareasAgregadasEnEstaPasada = new ArrayList<>();
+            List<Tarea> tareasAgregadasEnEstaPasada = new ArrayList<>(); // Usar ArrayList
             for (Tarea tarea : tareasConPadre) {
                 // Solo intentamos agregar si la tarea aún no está en el árbol
                 // y si su padre ya está en el árbol
@@ -133,6 +133,26 @@ public class TareaService {
         rabbitMQSender.sendTareaEvent(mensaje);
         return nuevaTarea;
     }
+    public List<Tarea> findByEstado(String estado) {
+        return tareaRepository.findByEstado(estado);
+    }
+
+    public List<Tarea> findByPrioridad(String prioridad) {
+        return tareaRepository.findByPrioridad(prioridad);
+    }
+
+    public List<Tarea> findByTipo(String tipo) {
+        return tareaRepository.findByTipo(tipo);
+    }
+
+    public List<Tarea> findByEstadoOrderByFechaCreacionAsc(String estado) {
+        return tareaRepository.findByEstadoOrderByFechaCreacionAsc(estado);
+    }
+
+    public List<Tarea> findByPrioridadOrderByFechaCreacionDesc(String prioridad) {
+        return tareaRepository.findByPrioridadOrderByFechaCreacionDesc(prioridad);
+    }
+
 
     public Tarea actualizarTarea(Long id, Tarea tareaActualizada) {
         LOGGER.log(Level.INFO, "Actualizando tarea con ID: {0}", id);
@@ -211,7 +231,7 @@ public class TareaService {
                 case "ACTUALIZAR":
                     if (tareaAnterior != null) {
                         tareaRepository.save(tareaAnterior); // Restaurar estado anterior en DB
-                        // Si la jerarquía cambió con la actualización, aquí también se debería revertir el árbol (PENDIENTE)
+                        // Si la jerarquía cambió con la actualización, aquí también se debería revertir el árbol
                         String mensaje = "Deshecha actualización: ID " + tareaAnterior.getId();
                         rabbitMQSender.sendTareaEvent(mensaje);
                         return mensaje;
@@ -310,4 +330,4 @@ public class TareaService {
         LOGGER.log(Level.INFO, "Verificando si la cola de tareas programadas está vacía.");
         return colaTareasProgramadas.isEmpty();
     }
-} este es mi codigo de tarea serv
+}
